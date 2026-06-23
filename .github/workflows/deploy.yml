@@ -1,0 +1,42 @@
+name: Terraform Deploy
+
+on:
+  push:
+    paths:
+      - "terraform.tfvars"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download module from ADO (manual zip)
+        run: |
+          curl -u ":${{ secrets.ADO_PAT }}" \
+          -o rg-module.zip \
+          "https://pkgs.dev.azure.com/${{ secrets.ADO_ORG }}/${{ secrets.ADO_PROJECT }}/_apis/packaging/feeds/${{ secrets.ADO_FEED }}/items?api-version=7.1-preview.1"
+
+      - name: Extract module
+        run: |
+          mkdir -p modules/rg
+          unzip rg-module.zip -d modules/rg
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Plan
+        run: terraform plan -var-file=terraform.tfvars
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -var-file=terraform.tfvars
