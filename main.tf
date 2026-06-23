@@ -1,5 +1,5 @@
 module "rg" {
-  source = "../tf-module/rg_module"
+source = "./modules/rg"
 
   name     = var.rg_name
   location = var.location
