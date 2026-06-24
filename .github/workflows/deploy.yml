@@ -2,6 +2,8 @@ name: Terraform Deploy
 
 on:
   push:
+    branches:
+      - main
     paths:
       - "terraform.tfvars"
 
@@ -15,25 +17,53 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
       ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
+      AZURE_DEVOPS_EXT_PAT: ${{ secrets.ADO_PAT }}
+
     steps:
-      - uses: actions/checkout@v4
 
-      - name: Download module from ADO (manual zip)
-        run: |
-          curl -u ":${{ secrets.ADO_PAT }}" \
-          -o rg-module.zip \
-          "https://pkgs.dev.azure.com/${{ secrets.ADO_ORG }}/${{ secrets.ADO_PROJECT }}/_apis/packaging/feeds/${{ secrets.ADO_FEED }}/items?api-version=7.1-preview.1"
+      - name: Checkout Deployment Repo
+        uses: actions/checkout@v4
 
-      - name: Extract module
+      - name: Install Azure CLI
         run: |
-          mkdir -p modules/rg
-          unzip rg-module.zip -d modules/rg
+          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+      - name: Install Azure DevOps Extension
+        run: |
+          az extension add --name azure-devops --yes
+
+      - name: Configure Azure DevOps
+        run: |
+          az devops configure \
+            --defaults \
+            organization=https://dev.azure.com/${{ secrets.ADO_ORG }} \
+            project=${{ secrets.ADO_PROJECT }
+
+      - name: Download Terraform Module
+        run: |
+          mkdir -p modules/rg_module
+
+          az artifacts universal download \
+            --organization "https://dev.azure.com/${{ secrets.ADO_ORG }}" \
+            --project "${{ secrets.ADO_PROJECT }}" \
+            --scope project \
+            --feed "${{ secrets.ADO_FEED }}" \
+            --name "rg-module" \
+            --version "*" \
+            --path "./modules/rg_module"
+
+      - name: Verify Download
+        run: |
+          ls -R modules/rg_module
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
         run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
 
       - name: Terraform Plan
         run: terraform plan -var-file=terraform.tfvars
