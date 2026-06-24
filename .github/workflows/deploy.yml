@@ -37,7 +37,7 @@ jobs:
           az devops configure \
             --defaults \
             organization=https://dev.azure.com/${{ secrets.ADO_ORG }} \
-            project=${{ secrets.ADO_PROJECT }
+            project=${{ secrets.ADO_PROJECT }}
 
       - name: Download Terraform Module
         run: |
