@@ -20,24 +20,12 @@ jobs:
       AZURE_DEVOPS_EXT_PAT: ${{ secrets.ADO_PAT }}
 
     steps:
-
       - name: Checkout Deployment Repo
         uses: actions/checkout@v4
-
-      - name: Install Azure CLI
-        run: |
-          curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
       - name: Install Azure DevOps Extension
         run: |
           az extension add --name azure-devops --yes
-
-      - name: Configure Azure DevOps
-        run: |
-          az devops configure \
-            --defaults \
-            organization=https://dev.azure.com/${{ secrets.ADO_ORG }} \
-            project=${{ secrets.ADO_PROJECT }}
 
       - name: Download Terraform Module
         run: |
@@ -54,7 +42,7 @@ jobs:
 
       - name: Verify Download
         run: |
-          ls -R modules/rg_module
+          find modules -type f
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
