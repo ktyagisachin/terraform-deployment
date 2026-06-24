@@ -1,4 +1,4 @@
-rg_name  = "rg-dev-002"
+rg_name  = "rg-dev-003"
 location = "Central India"
 
 tags = {
